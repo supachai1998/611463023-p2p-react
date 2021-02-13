@@ -47,10 +47,11 @@ const App = () => {
   const [peerConnectID, setpeerConnectID] = useState();
   const [optional, setoptional] = useState();
   const [messages, setmessages] = useState([]);
+  const [clientVideoid, setclientVideoid] = useState();
   const clientVideo = useRef();
   const [objectVideo, setobjectVideo] = useState([]);
   const [img, setimg] = useState("");
-
+  
   useEffect(() => {
     peer.on("open", (id) => {
       // console.log(id);
@@ -65,7 +66,7 @@ const App = () => {
       console.log(":N:--->> peer connection");
       console.log(conn);
       conn.on("open", () => {
-        const data = `${peer.id} is Joined`;
+        const data = `${peer.id} is Joined (received)`;
         conn.send({ type: "chat", data: data, from: peer.id });
       });
       conn.on("data", (data) => {
@@ -104,9 +105,9 @@ const App = () => {
       setconn();
       console.log("disconnect");
     });
-
-    
+    let prevStream = []
     peer.on("call", (call) => {
+      
       const getUserMedia =
         navigator.getUserMedia ||
         navigator.webkitGetUserMedia ||
@@ -118,7 +119,9 @@ const App = () => {
         (stream) => {
           call.answer(stream); // Answer the call with an A/V stream.
           call.on("stream", (remoteStream) => {
+            console.log(" stream", remoteStream);
             clientVideo.current.srcObject = stream;
+            setclientVideoid(stream.id)
             prevStream.push(remoteStream)
             let pp = prevStream.filter( (ele, ind) => ind === prevStream.findIndex( elem =>  elem.id === ele.id))
             setobjectVideo(pp)
@@ -134,29 +137,34 @@ const App = () => {
         }
       );
     });
-  }, [peer]);
-  let prevStream = []
+  }, []);
+  const  getUniqueListBy = (arr) => {
+    return [...new Map(arr.map(item => [item['id'], item])).values()]
+}
+
   const back = () => {
     peer.destroy();
     window.location.reload(false);
   };
+  let prevStream = []
   const openWebCam = () => {
     const getUserMedia =
       navigator.getUserMedia ||
       navigator.webkitGetUserMedia ||
       navigator.mozGetUserMedia ||
       navigator.mediaDevices;
-
     getUserMedia(
       { video: { width: 320, height: 180 }, audio: true },
-      (stream) => {
-        const call = peer.call(peerConnectID, stream);
+      async (stream) => {
+        
+        const call = await peer.call(peerConnectID, stream);
+        setconn(call);
         call.on("stream", (remoteStream) => {
           clientVideo.current.srcObject = stream;
+          setclientVideoid(stream.id)
           prevStream.push(remoteStream)
           let pp = prevStream.filter( (ele, ind) => ind === prevStream.findIndex( elem =>  elem.id === ele.id))
           setobjectVideo(pp)
-          setconn(call);
         });
         call.on("error", (err) => {
           alert(err);
@@ -166,6 +174,8 @@ const App = () => {
       (fail) => alert(`ไม่สามารถเปิดกล้องได้`)
     );
   };
+
+
   const connectPeer = (option) => {
     if (option === 1) {
       openWebCam();
@@ -174,7 +184,7 @@ const App = () => {
       console.log("<<---:E: peer connection");
       console.log(conn);
       conn.on("open", () => {
-        const data = `${peer.id} is Joined`;
+        const data = `${peer.id} is Joined (Sender)`;
         conn.send({ type: "chat", data: data, from: peer.id });
       });
       setconn(conn);
@@ -209,7 +219,7 @@ const App = () => {
       console.log("<<---:E: peer connection");
       console.log(conn);
       conn.on("open", () => {
-        const data = `${peer.id} is Joined`;
+        const data = `${peer.id} is Joined (Camera)`;
         conn.send({ type: "file", data: data, from: peer.id });
       });
       setconn(conn);
@@ -234,7 +244,7 @@ const App = () => {
     return (
       <>
         {messages.map((data, ind) => (
-          <Grid key={ind + data.from + data.msg} Item xs={12}>
+          <Grid key={ind + data.from + data.msg} Item xs={10}>
             <Card maxWidth="sm">
               <Typography
                 align={data.from === peer.id ? "right" : "left"}
@@ -391,7 +401,7 @@ const App = () => {
               ) : (
                 <>
                   <hr />
-                  <Grid container spacing={12}>
+                  <Grid container>
                     <Grid Item xs={12}>
                       <TextField
                         type="text"
@@ -436,7 +446,7 @@ const App = () => {
               )}
             </Card>
           </Container>
-          <Container theme={theme} maxWidth="sm" mt={10}>
+          <Container theme={theme} maxWidth="sm">
             <Grid container justify="center">
               {optional === 2 ? (
                 <>{chat()}</>
@@ -451,14 +461,18 @@ const App = () => {
           <Grid container justify="center">
             <image src={img} onClick={() => window.open(img, "_blank")} />
             <video
+              id={clientVideoid}
               display="flex"
               ref={clientVideo}
               width="50%"
               autoPlay
               muted
             />
+            {/* <video display="flex" ref={otherVideo} width="50%" autoPlay /> */}
+            {/* {objectVideo && objectVideo.map((stream,i)=><video key={i} display="flex" ref={otherVideo[i]} width="50%" autoPlay />)} */}
             {objectVideo && objectVideo.map((stream,i)=><Cus_video key={i} stream={stream} />)}
-           </Grid>
+
+          </Grid>
         </>
       ) : (
         <></>
