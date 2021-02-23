@@ -13,8 +13,8 @@ import {
   IconButton,
   palette,
 } from "@material-ui/core";
+import { spacing ,positions } from '@material-ui/system';
 import Peer from "peerjs";
-import uuid from "react-uuid";
 import Cus_video from './video'
 
 const theme = createMuiTheme({
@@ -33,16 +33,15 @@ const theme = createMuiTheme({
     ].join(","),
   },
 });
-const _peer = new Peer(uuid(), {
-  host: "192.168.43.65",
-  port: 9000,
-  path: "/myapp",
-  secure: false,
+const _peer = new Peer({
+  initiator: true,
+  trickle: false,
+
+  secure: true,
 });
 const App = () => {
   const [peer, setpeer] = useState(_peer);
-  const [peername, setpeername] = useState("");
-  const [toggleEditPeerName, settoggleEditPeerName] = useState(false);
+  const [peerID, setpeerID] = useState("");
   const [conn, setconn] = useState();
   const [peerConnectID, setpeerConnectID] = useState();
   const [optional, setoptional] = useState();
@@ -53,7 +52,7 @@ const App = () => {
 
   useEffect(() => {
     peer.on("open", (id) => {
-      // console.log(id);
+      setpeerID(id)
     });
     peer.on("error", (err) => {
       alert(err);
@@ -107,18 +106,17 @@ const App = () => {
 
     
     peer.on("call", (call) => {
-      const getUserMedia =
-        navigator.getUserMedia ||
-        navigator.webkitGetUserMedia ||
-        navigator.mozGetUserMedia ||
-        navigator.mediaDevices;
-
-      getUserMedia(
-        { video: { width: 320, height: 180 }, audio: true },
+      let _navigator = navigator.getUserMedia ||
+        navigator.webkitGetUserMedia.getUserMedia ||
+        navigator.mozGetUserMedia.getUserMedia ||
+        navigator.mediaDevices.getUserMedia;
+        
+        _navigator (
+        { video: { width: window.innerWidth / 2, height: window.innerHeight / 2 }, audio: true },
         (stream) => {
+          clientVideo.current.srcObject = stream;
           call.answer(stream); // Answer the call with an A/V stream.
           call.on("stream", (remoteStream) => {
-            clientVideo.current.srcObject = stream;
             prevStream.push(remoteStream)
             let pp = prevStream.filter( (ele, ind) => ind === prevStream.findIndex( elem =>  elem.id === ele.id))
             setobjectVideo(pp)
@@ -137,22 +135,33 @@ const App = () => {
   }, [peer]);
   let prevStream = []
   const back = () => {
+    peer.disconnect()
     peer.destroy();
-    window.location.reload(false);
+    const _peer = new Peer(peerID,{
+      initiator: true,
+      trickle: false,
+      secure: true,
+    });
+    setpeer(_peer)
+    setoptional()
+    setconn()
+    setobjectVideo([])
+    prevStream=[]
+    clientVideo.current.srcObject = null
   };
   const openWebCam = () => {
-    const getUserMedia =
-      navigator.getUserMedia ||
-      navigator.webkitGetUserMedia ||
-      navigator.mozGetUserMedia ||
-      navigator.mediaDevices;
-
-    getUserMedia(
-      { video: { width: 320, height: 180 }, audio: true },
+    let _navigator = navigator.getUserMedia ||
+        navigator.webkitGetUserMedia.getUserMedia ||
+        navigator.mozGetUserMedia.getUserMedia ||
+        navigator.mediaDevices.getUserMedia;
+        
+        _navigator (
+      { video: { width: window.innerWidth / 2, height: window.innerHeight / 2 }, audio: true },
       (stream) => {
         const call = peer.call(peerConnectID, stream);
+        console.log(` caller => `,call,stream)
+        clientVideo.current.srcObject = stream;
         call.on("stream", (remoteStream) => {
-          clientVideo.current.srcObject = stream;
           prevStream.push(remoteStream)
           let pp = prevStream.filter( (ele, ind) => ind === prevStream.findIndex( elem =>  elem.id === ele.id))
           setobjectVideo(pp)
@@ -235,14 +244,13 @@ const App = () => {
       <>
         {messages.map((data, ind) => (
           <Grid key={ind + data.from + data.msg} Item xs={12}>
-            <Card maxWidth="sm">
+          <CardActions style={{ width: '90%' ,justifyContent: data.from === peer.id ? "flex-end" : "flex-start" }}>
               <Typography
-                align={data.from === peer.id ? "right" : "left"}
                 color={data.from === peer.id ? "primary" : "textPrimary"}
               >
                 {data.msg}
               </Typography>
-            </Card>
+            </CardActions>
           </Grid>
         ))}
         <TextField
@@ -254,7 +262,9 @@ const App = () => {
             if (e.key == "Enter") {
               const msg = typemsg;
               const myid = peer.id;
-              conn.send({ type: "chat", data: msg, from: myid });
+              try{
+                conn.send({ type: "chat", data: msg, from: myid });
+              }catch(e){alert(e.message); back()}
               setmessages((prev) => [...prev, { from: myid, msg: typemsg }]);
               e.target.value = "";
             }
@@ -314,48 +324,12 @@ const App = () => {
           <Container theme={theme} maxWidth="sm">
             <Card>
               <CardContent display="flex">
-                {toggleEditPeerName ? (
-                  <>
-                    <TextField
-                     variant="filled"
-                      type="text"
-                      label="ID เรา "
-                      onKeyPress={e=>{
-                        const regex = new RegExp("^[a-zA-Z0-9 ]+$");
-                        const str = String.fromCharCode(!e.charCode ? e.which : e.charCode);
-                        if (!regex.test(str)) {alert("กรอกเฉพาะภาษาอังกฤษและตัวเลข");return null}
-                      }}
-                      onChange={(e) => setpeername(e.target.value)}
-                    />{" "}
-                    <Button
-                   
-                      variant="contained"
-                      size="small"
-                      onClick={() => {
-                        if(peername.length > 0)
-                        {peer.disconnect();
-                        const _peer = new Peer(peername, {
-                          host: "192.168.43.65",
-                          port: 9000,
-                          path: "/myapp",
-                          secure: false,
-                        });
-                        setpeer(_peer);
-                        settoggleEditPeerName(prev=>!prev);
-                      }else{alert(`คุณลืมกรอกชื่อ`)}
-                      }}
-                    >
-                      ตกลง
-                    </Button>
-                  </>
-                ) : (
-                  <>
                     <Tooltip title="กดเพื่อคัดลอก">
                       <Typography
                       
                         onClick={() => {
                           try {
-                            navigator.clipboard.writeText(peer.id);
+                            navigator.clipboard.writeText(peerID);
                           } catch (e) {
                             console.log(
                               "ERROR : ไม่สามารถใช้งานคลิกเพื่อคัดลอกได้ \n ให้ผู้ใช้คลุมเพื่อคัดลอกแทน \n"
@@ -363,36 +337,28 @@ const App = () => {
                           }
                         }}
                       >
-                        ID : {peer._id}{" "}
-                        <Button
-                    
-                      variant="contained"
-                      size="small"
-                      onClick={() => settoggleEditPeerName((prev) => !prev)}
-                    >
-                      แก้ไข
-                    </Button>
+                        ID : {peerID}{" "}  
                       </Typography>
                     </Tooltip>
-                    
-                  </>
-                )}
+
               </CardContent>
               {conn ? (
-                <CardActions justify="space-between">
+                <CardActions style={{ width: '90%', justifyContent: 'flex-end'  }}>
                   <Button
                     variant="contained"
                     size="small"
+                    justify="space-between" 
                     onClick={() => back()}
                   >
                     ย้อนกลับ
                   </Button>
-                </CardActions>
+                  </CardActions>
+
               ) : (
                 <>
                   <hr />
-                  <Grid container spacing={12}>
-                    <Grid Item xs={12}>
+                  <Grid container p="2">
+                    <Grid Item xs={10}>
                       <TextField
                         type="text"
                         label="ID เพื่อน "
@@ -404,6 +370,7 @@ const App = () => {
                         variant="contained"
                         size="small"
                         onClick={() => {
+                          console.log('open camera')
                           connectPeer(1);
                         }}
                         disabled={!peerConnectID ? true : false}
@@ -436,7 +403,7 @@ const App = () => {
               )}
             </Card>
           </Container>
-          <Container theme={theme} maxWidth="sm" mt={10}>
+          <Container theme={theme} maxWidth="sm" mt={2}>
             <Grid container justify="center">
               {optional === 2 ? (
                 <>{chat()}</>
