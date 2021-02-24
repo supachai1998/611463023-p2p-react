@@ -5,25 +5,20 @@
   "private": true,
   "dependencies": {
     "@material-ui/core": "^4.11.3",
-    "@material-ui/lab": "^4.0.0-alpha.57",
     "@testing-library/jest-dom": "^5.11.9",
     "@testing-library/react": "^11.2.5",
     "@testing-library/user-event": "^12.6.3",
     "base-64": "^1.0.0",
     "cross-env": "^7.0.3",
-    "detect-browser": "^5.2.0",
     "peerjs": "^1.3.1",
-    "randomstring": "^1.1.5",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
-    "react-router-dom": "^5.2.0",
     "react-scripts": "4.0.2",
     "react-uuid": "^1.0.2",
     "web-vitals": "^1.1.0"
   },
   "scripts": {
-    "startssl": "cross-env HTTPS=true SSL_CRT_FILE=./host.cert SSL_KEY_FILE=./host.key react-scripts start",
-    "start": "react-scripts start",
+    "start": "cross-env HTTPS=true SSL_CRT_FILE=./host.cert SSL_KEY_FILE=./host.key react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
