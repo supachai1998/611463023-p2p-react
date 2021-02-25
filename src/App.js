@@ -13,12 +13,18 @@ import {
   IconButton,
   palette,
   LinearProgress ,
+  List,
+  Paper ,
+
+
 } from "@material-ui/core";
 import {Alert} from '@material-ui/lab/';
 import { spacing ,positions } from '@material-ui/system';
 import randomstring from 'randomstring'
 import Peer from "peerjs";
 import Cus_video from './video'
+import ListFile from './ListFile'
+import ListChat from './ListChat'
 const theme = createMuiTheme({
   typography: {
     fontFamily: [
@@ -90,7 +96,7 @@ const App = () => {
           reconnect()
         }
         if (data.type === "chat") {
-          setmessages((prev) => [...prev, { from: data.from, msg: data.data }]);
+          setmessages((prev) => [ { from: data.from, msg: data.data },...prev,]);
           setoptional(2);
         } else if (data.type === "file") {
           setoptional(3);
@@ -98,7 +104,7 @@ const App = () => {
           if (data.filename) {
             const blob = new Blob([data.file], {type: data.data_type});
             const url = URL.createObjectURL(blob);
-            setlistFile(prev=>[...prev,{name:data.filename,url:url}]);
+            setlistFile(prev=>[{name:data.filename,url:url,type:data.data_type},...prev,]);
             // window.open(url, "_blank");
             if (url) {
               conn.send({ type: "connect", success: true });
@@ -218,7 +224,7 @@ const App = () => {
         setloadding(false)
         if (peerConnectID === undefined) {setpeerConnectID(data.from);}
         if (data.type === "chat") {
-          setmessages((prev) => [...prev, { from: data.from, msg: data.data }]);
+          setmessages((prev) => [ { from: data.from, msg: data.data },...prev,]);
           setoptional(2);
         } else if (data.type === "file") {
           setoptional(3);
@@ -226,7 +232,7 @@ const App = () => {
           if (data.filename) {
             const blob = new Blob([data.file], {type: data.type});
             const url = URL.createObjectURL(blob);
-            setlistFile(prev=>[...prev,{name:data.filename,url:url}]);
+            setlistFile(prev=>[{name:data.filename,url:url,type:data.data_type},...prev,]);
             // window.open(url, "_blank");
             if (url) {
               conn.send({ type: "connect", success: true });
@@ -264,7 +270,7 @@ const App = () => {
         if (data.filename) {
           const blob = new Blob([data.file], {type: data.data_type});
           const url = URL.createObjectURL(blob);
-          setlistFile(prev=>[...prev,{name:data.filename,url:url}]);
+          setlistFile(prev=>[{name:data.filename,url:url,type:data.data_type},...prev,]);
           // window.open(url, "_blank");
           if (url) {
             conn.send({ type: "connect", success: true });
@@ -293,21 +299,17 @@ const App = () => {
 
   const chat = () => {
     return (
-      <>
-        {messages.map((data, ind) => (
-          <Grid key={ind + data.from + data.msg} Item={true} xs={12}>
-          <CardActions style={{ width: '90%' ,justifyContent: data.from === peer.id ? "flex-end" : "flex-start" }}>
-              <Typography
-                color={data.from === peer.id ? "primary" : "textPrimary"}
-              >
-                {data.msg}
-              </Typography>
-            </CardActions>
-          </Grid>
-        ))}
+      <div style={{margin:'16px auto'}}>
+        <Paper  style={{maxHeight: 200, overflow: 'auto'}}>
+          <List>
+              {messages.map((data, ind) => <ListChat key={ind} data={data} peer={peer} />)}
+          </List>
+        </Paper>
         <TextField
           type="text"
           label="ใส่ข้อความ"
+          style={{margin:'16px auto' ,width:"100%"}}
+
           defaultValue={typemsg}
           onChange={(e) => settypemsg(e.target.value)}
           onKeyDown={(e) => {
@@ -317,13 +319,13 @@ const App = () => {
               try{
                 conn.send({ type: "chat", data: msg, from: myid });
               }catch(e){setloadding(false);console.warn(e.message); reconnect()}
-              setmessages((prev) => [...prev, { from: myid, msg: typemsg }]);
+              setmessages((prev) => [ { from: myid, msg: typemsg },...prev,]);
               e.target.value = "";
               settypemsg("")
             }
           }}
         />
-      </>
+      </div>
     );
   };
   const [file, setmyfile] = useState();
@@ -346,11 +348,12 @@ const App = () => {
         });
         console.log('send ',file.name)
       //
+      setbuttonUpload(true);
     };
     return (
       <>
         <input
-        style={{marginTop:"3%"}}
+        style={{marginTop:"3% auto"}}
           type="file"
           accept="*"
           onChange={(e) => onChangeHandler(e)}
@@ -358,7 +361,7 @@ const App = () => {
         <Button
           variant="outlined"
           color="primary"
-          style={{marginTop:"3%"}}
+          style={{margin:" auto"}}
           disabled={buttonUpload}
           onClick={() => onClickHandler()}
         >
@@ -367,12 +370,11 @@ const App = () => {
       </>
     );
   };
-
   return (
     <>
       {peer ? (
         <>
-          <Container theme={theme} maxWidth="sm">
+        <Container maxWidth="sm">
             <Card>
               <CardContent display="flex">
                     <Tooltip title="กดเพื่อคัดลอก">
@@ -389,35 +391,36 @@ const App = () => {
                         }}
                       >
                         ID : {peerID}{" "}  
+                        {conn ? 
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    size="small"
+                    display="flex"
+                    justify="space-between" 
+                    style={{  justifyContent: 'flex'  }}
+                    onClick={() => {try{conn.send({ type: "disconnect", success: "bye" })}catch(e){};reconnect()}}
+                  >ออกจากระบบ</Button> : <></>}
                       </Alert>
                     </Tooltip>
-
+                    
               </CardContent>
               {conn ? (
-                <CardActions style={{ width: '90%', justifyContent: 'flex-end'  }}>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    justify="space-between" 
-                    onClick={() => {try{conn.send({ type: "disconnect", success: "bye" })}catch(e){};reconnect()}}
-                  >
-                    ย้อนกลับ
-                  </Button>
-                  </CardActions>
-
+                <></>
               ) : (
                 <>
                   <hr />
-                  <Grid container xs={12} p="2">
-                    <Grid Item={true} xs={10}>
+                  <Grid container xs={12} p="2" >
+                    <Grid xs={10} style={{margin:"1% auto"}}>
                       <TextField
                         type="text"
                         label="ID เพื่อน "
                         defaultValue={prevpeerConnectID}
                         onChange={(e) =>{ setpeerConnectID(e.target.value);setprevpeerConnectID(e.target.value)}}
                       />
+
                     </Grid>
-                    <Grid Item={true} xs={3}>
+                    <Grid xs={3} style={{margin:"3% auto"}}>
                       <Button
                         variant="contained"
                         size="small"
@@ -430,7 +433,7 @@ const App = () => {
                         กล้อง
                       </Button>
                     </Grid>
-                    <Grid Item={true} xs={3}>
+                    <Grid xs={3} style={{margin:"3% auto"}}>
                       <Button
                         variant="contained"
                         size="small"
@@ -440,7 +443,7 @@ const App = () => {
                         แชท
                       </Button>
                     </Grid>
-                    <Grid Item={true} xs={3}>
+                    <Grid xs={3} style={{margin:"3% auto"}}>
                       <Button
                         variant="contained"
                         size="small"
@@ -455,8 +458,7 @@ const App = () => {
               )}
             </Card>
           </Container>
-          <Container theme={theme} maxWidth="sm" mt={2}>
-            <Grid container justify="center">
+          <Container theme={theme} maxWidth="sm" style={{marginTop:'2%'}}>
               {optional === 2 ? (
                 <>{chat()}</>
               ) : optional === 3 && conn? (
@@ -464,29 +466,27 @@ const App = () => {
               ) : (
                 <></>
               )}
-            </Grid>
           </Container>
-          {loadding ? <LinearProgress style={{marginTop:'1%'}} />: <> </> }
-          
-          <Container theme={theme} justify="center" maxWidth="sm" mt={2}>
-          {listFile && listFile.map((file,ind)=>
-              <p key={ind}>
-                <a href="#" onClick={()=>window.open(file.url, "_blank")}> {file.name}</a>
-              </p>
-            )}
-          </Container>
-          <Grid container justify="center">
-            {/* setlistFile(prev=>[...prev,{name:data.filename,url:url}]); */}
-            
+          {loadding ? <LinearProgress style={{marginTop:'2%'}} />: <> </> }
+          {listFile.length >0  ?<Container theme={theme} justify="center" maxWidth="sm" style={{marginTop:'2%'}}>
+          <Paper  style={{maxHeight: 200, overflow: 'auto'}}>
+            <List >
+              {listFile && listFile.map((file,ind)=><ListFile file={file} />)}
+            </List>
+            </Paper>
+          </Container> : <></>}
+          <Container theme={theme} justify="center" maxWidth="sm"  style={{marginTop:'2%'}}>
             <video
-              display="flex"
               ref={clientVideo}
-              width="50%"
+              style={{margin:"auto auto"}}
+              width="100%"
+              height="50%"
               autoPlay
               muted
             />
             {objectVideo && objectVideo.map((stream,i)=><Cus_video key={i} stream={stream} />)}
-           </Grid>
+           </Container>
+          
         </>
       ) : (
         <></>
