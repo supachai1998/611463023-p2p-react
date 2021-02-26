@@ -458,6 +458,14 @@ const App = () => {
               )}
             </Card>
           </Container>
+          {listFile.length >0  ?
+          <Container theme={theme} justify="center" maxWidth="sm" style={{marginTop:'2%'}}>
+          <Paper  style={{maxHeight: 200, overflow: 'auto'}}>
+            <List >
+              {listFile && listFile.map((file,ind)=><ListFile file={file} />)}
+            </List>
+            </Paper>
+          </Container> : <></>}
           <Container theme={theme} maxWidth="sm" style={{marginTop:'2%'}}>
               {optional === 2 ? (
                 <>{chat()}</>
@@ -468,13 +476,7 @@ const App = () => {
               )}
           </Container>
           {loadding ? <LinearProgress style={{marginTop:'2%'}} />: <> </> }
-          {listFile.length >0  ?<Container theme={theme} justify="center" maxWidth="sm" style={{marginTop:'2%'}}>
-          <Paper  style={{maxHeight: 200, overflow: 'auto'}}>
-            <List >
-              {listFile && listFile.map((file,ind)=><ListFile file={file} />)}
-            </List>
-            </Paper>
-          </Container> : <></>}
+          
           <Container theme={theme} justify="center" maxWidth="sm"  style={{marginTop:'2%'}}>
             <video
               ref={clientVideo}
