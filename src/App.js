@@ -43,12 +43,21 @@ const theme = createMuiTheme({
 });
 // 'iceServers': [ { url: 'stun:stun.l.google.com:19302' }, { url: 'stun:stun1.l.google.com:19302' }, ],
 const App = () => {
-  const [peer, setpeer] = useState(new Peer(randomstring.generate(2)+'-CS',{
+  const idenID = '-CS61'
+  const generateID = randomstring.generate(2)
+  const [peer, setpeer] = useState(new Peer(generateID+idenID,{
     initiator: true,
     trickle: false,
     secure: true,
+    port: 443,
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302'  }, 
+      { urls: 'stun:stun1.l.google.com:19302' }, 
+      { urls: 'stun:stun2.l.google.com:19302' }, 
+    ]
   }));
-  const [peerID, setpeerID] = useState(peer.id);
+  const [peerStatus, setpeerStatus] = useState(false);
+  const [peerID, setpeerID] = useState(generateID);
   const [conn, setconn] = useState();
   const [peerConnectID, setpeerConnectID] = useState();
   const [prevpeerConnectID, setprevpeerConnectID] = useState("");
@@ -59,15 +68,18 @@ const App = () => {
   const [listFile, setlistFile] = useState([]);
 
   const [loadding, setloadding] = useState(false);
-
   useEffect(() => {
 
     peer.on("open", (id) => {
-      setpeerID(id)
+      console.log('connect server peerid : ',id)
+      setpeerStatus(true)
     });
     peer.on("error", (err) => {
+      setpeerStatus(false)
       setloadding(false)
+      alert(err)
       failedtoJoinServer(err)
+      reconnect()
     });
     peer.on("disconnected",()=>{
       console.log(`peer id ${peer.id} disconnected`)
@@ -120,6 +132,7 @@ const App = () => {
       conn.on("error", (err) => {
         setloadding(false)
         failedtoJoinServer(err)
+        console.log(err)
       });
     });
 
@@ -154,7 +167,7 @@ const App = () => {
         }
       );
     });
-  }, []);
+  }, [peer]);
   let prevStream = []
 
   const failedtoJoinServer = async (err) =>{
@@ -183,7 +196,7 @@ const App = () => {
       { video: { width: window.innerWidth / 2, height: window.innerHeight / 2 }, audio: true },
       (stream) => {
         
-        const call = peer.call(peerConnectID, stream);
+        const call = peer.call(peerConnectID+idenID, stream);
         console.log(` caller => `,call,stream)
         clientVideo.current.srcObject = stream;
         call.on("stream", (remoteStream) => {
@@ -209,7 +222,7 @@ const App = () => {
     if (option === 1) {
       openWebCam();
     } else if (option === 2) {
-      const conn =  peer.connect(peerConnectID);
+      const conn =  peer.connect(peerConnectID+idenID);
       console.log("<<---:E: peer connection");
       console.log(conn);
       
@@ -253,7 +266,7 @@ const App = () => {
         failedtoJoinServer(err)
       });
     } else if (option === 3) {
-      const conn = peer.connect(peerConnectID);
+      const conn = peer.connect(peerConnectID+idenID);
       console.log("<<---:E: peer connection");
       console.log(conn);
       conn.on("open", () => {
@@ -333,9 +346,13 @@ const App = () => {
 
   const upload = () => {
     const onChangeHandler = (e) => {
-      setmyfile(e.target.files[0]);
-
-      setbuttonUpload(false);
+      const file = e.target.files[0]
+      if(file.size >= 5242880){
+        setmyfile(file);
+        setbuttonUpload(false);
+      }else{
+        alert("file ต้องมากกว่า 5MB")
+      }
     };
     const onClickHandler = () => {
       const blob = new Blob([file], {type: file.type});
@@ -377,33 +394,45 @@ const App = () => {
         <Container maxWidth="sm">
             <Card>
               <CardContent display="flex">
-                    <Tooltip title="กดเพื่อคัดลอก">
+              {peerStatus ?  <Tooltip title="กดเพื่อคัดลอก">
                       <Alert
                         severity="success"
                         onClick={() => {
-                          try {
-                            navigator.clipboard.writeText(peerID);
-                          } catch (e) {
-                            console.log(
-                              "ERROR : ไม่สามารถใช้งานคลิกเพื่อคัดลอกได้ \n ให้ผู้ใช้คลุมเพื่อคัดลอกแทน \n"
-                            );
-                          }
-                        }}
-                      >
-                        ID : {peerID}{" "}  
-                        {conn ? 
-                  <Button
+                          try {navigator.clipboard.writeText(peerID);} catch (e) {console.log("ERROR : ไม่สามารถใช้งานคลิกเพื่อคัดลอกได้ \n ให้ผู้ใช้คลุมเพื่อคัดลอกแทน \n");}}}>
+                        ID : {peerID}{"  "}  
+                        {peerStatus && !conn ?<Button variant="outlined" size="small" onClick={()=>{
+                          const inputID = prompt("กรอก ID เป็นภาษาอังกฤษ")
+                          if(inputID && inputID.length > 0){
+                            setpeerStatus(false)
+                            // peer.disconnect()
+                              setpeer()
+                              setpeer(new Peer(inputID+idenID,{
+                                initiator: true,
+                                trickle: false,
+                                secure: true,
+                                port: 443,
+                                iceServers: [
+                                  { urls: 'stun:stun.l.google.com:19302'  }, 
+                                  { urls: 'stun:stun1.l.google.com:19302' }, 
+                                  { urls: 'stun:stun2.l.google.com:19302' }, 
+                                ]
+                              }))
+                              setpeerID(inputID)
+                            }else{alert("กรุณาใส่ ID")}
+                        }}>เปลี่ยน ID</Button> : <></>}
+                        {conn ? <Button
                     variant="outlined"
                     color="secondary"
                     size="small"
                     display="flex"
                     justify="space-between" 
                     style={{  justifyContent: 'flex'  }}
-                    onClick={() => {try{conn.send({ type: "disconnect", success: "bye" })}catch(e){};reconnect()}}
-                  >ออกจากระบบ</Button> : <></>}
+                    onClick={() => {try{conn.send({ type: "disconnect", success: "bye" })}catch(e){};reconnect()}}>
+                    ออกจากระบบ</Button> : <></>}
                       </Alert>
-                    </Tooltip>
-                    
+                    </Tooltip> 
+                  : <><Alert severity="warning"> กำลังเชื่อมต่อ  </Alert><LinearProgress  /></>}
+                             
               </CardContent>
               {conn ? (
                 <></>
@@ -411,15 +440,18 @@ const App = () => {
                 <>
                   <hr />
                   <Grid container xs={12} p="2" >
+                  {peerStatus ?  
                     <Grid xs={10} style={{margin:"1% auto"}}>
                       <TextField
                         type="text"
                         label="ID เพื่อน "
                         defaultValue={prevpeerConnectID}
                         onChange={(e) =>{ setpeerConnectID(e.target.value);setprevpeerConnectID(e.target.value)}}
-                      />
+                      /> 
+                    </Grid>: <LinearProgress  /> }
+                   
 
-                    </Grid>
+                    
                     <Grid xs={3} style={{margin:"3% auto"}}>
                       <Button
                         variant="contained"
@@ -462,7 +494,7 @@ const App = () => {
           <Container theme={theme} justify="center" maxWidth="sm" style={{marginTop:'2%'}}>
           <Paper  style={{maxHeight: 200, overflow: 'auto'}}>
             <List >
-              {listFile && listFile.map((file,ind)=><ListFile file={file} />)}
+              {listFile && listFile.map((file,ind)=><ListFile key={ind} file={file} />)}
             </List>
             </Paper>
           </Container> : <></>}
@@ -478,6 +510,7 @@ const App = () => {
           {loadding ? <LinearProgress style={{marginTop:'2%'}} />: <> </> }
           
           <Container theme={theme} justify="center" maxWidth="sm"  style={{marginTop:'2%'}}>
+          {conn && optional === 1 ? <>Video ของคุณ {peer.id}</> : <></>}
             <video
               ref={clientVideo}
               style={{margin:"auto auto"}}
@@ -486,6 +519,9 @@ const App = () => {
               autoPlay
               muted
             />
+           
+            {conn && optional === 1 ? <> <hr style={{margin: "10px 2px"}}/> Video เพื่อน</> : <></>}
+            
             {objectVideo && objectVideo.map((stream,i)=><Cus_video key={i} stream={stream} />)}
            </Container>
           

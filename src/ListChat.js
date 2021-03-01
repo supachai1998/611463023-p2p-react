@@ -1,10 +1,13 @@
 import React from 'react';
-import {ListItem }  from '@material-ui/core';
+import {ListItem,Typography,Box   }  from '@material-ui/core';
 
 const ListChat = ({data,peer}) => {
-    console.log(data)
     return (
-        <ListItem  style={{display:'flex', justifyContent:data.from === peer.id ?'flex-end' : 'flex-start'}} >{data.msg}</ListItem>
+        <ListItem  style={{display:'flex', justifyContent:data.from === peer.id ?'flex-end' : 'flex-start'}} >
+            <Box bgcolor="info">
+                <Typography nowrap color={data.from === peer.id ?'primary' : 'initial'}>{data.msg}</Typography>
+            </Box>
+        </ListItem>
     );
 }
 
