@@ -140,8 +140,7 @@ const App = () => {
       
       setloadding(true)
       navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia || navigator.oGetUserMedia || navigator.mozGetUserMedia.getUserMedia;
-        
-        
+             
       navigator.getUserMedia (
         { video: { width: window.innerWidth / 2, height: window.innerHeight / 2 }, audio: true },
         (stream) => {
@@ -225,7 +224,6 @@ const App = () => {
       const conn =  peer.connect(peerConnectID+idenID);
       console.log("<<---:E: peer connection");
       console.log(conn);
-      
       conn.on("open", () => {
         
         setloadding(false)
@@ -253,14 +251,12 @@ const App = () => {
           }
         }
         if (data.type === "disconnect"){
-          
           // console.warn(`${peerConnectID} is disconnected`)
           console.log(`${peerConnectID} is disconnected`)
           setloadding(false)
           reconnect()
         }
       });
-
       conn.on("error", (err) => {
         setloadding(false)
         failedtoJoinServer(err)
@@ -347,11 +343,11 @@ const App = () => {
   const upload = () => {
     const onChangeHandler = (e) => {
       const file = e.target.files[0]
-      if(file.size >= 5242880){
+      if(file.size <= 5242880){
         setmyfile(file);
         setbuttonUpload(false);
       }else{
-        alert("file ต้องมากกว่า 5MB")
+        alert("file ต้องน้อยกว่า 5MB")
       }
     };
     const onClickHandler = () => {
@@ -431,8 +427,7 @@ const App = () => {
                     ออกจากระบบ</Button> : <></>}
                       </Alert>
                     </Tooltip> 
-                  : <><Alert severity="warning"> กำลังเชื่อมต่อ  </Alert><LinearProgress  /></>}
-                             
+                  : <><Alert severity="warning"> กำลังเชื่อมต่อ  </Alert><LinearProgress  /></>}                             
               </CardContent>
               {conn ? (
                 <></>
@@ -449,9 +444,7 @@ const App = () => {
                         onChange={(e) =>{ setpeerConnectID(e.target.value);setprevpeerConnectID(e.target.value)}}
                       /> 
                     </Grid>: <LinearProgress  /> }
-                   
-
-                    
+                                       
                     <Grid xs={3} style={{margin:"3% auto"}}>
                       <Button
                         variant="contained"
