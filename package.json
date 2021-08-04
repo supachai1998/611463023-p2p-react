@@ -1,7 +1,7 @@
 {
   "name": "react-simple",
   "version": "0.1.0",
-  "homepage": "./",
+  "homepage": "http://supachai1998.github.io/611463023-p2p-react",
   "private": true,
   "dependencies": {
     "@material-ui/core": "^4.11.3",
@@ -13,6 +13,7 @@
     "base-64": "^1.0.0",
     "cross-env": "^7.0.3",
     "detect-browser": "^5.2.0",
+    "gh-pages": "^3.2.3",
     "material-ui-icons": "^1.0.0-beta.36",
     "peerjs": "^1.3.1",
     "randomstring": "^1.1.5",
@@ -28,7 +29,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
     "extends": [
